@@ -1,3 +1,4 @@
 * fix Makefile 'test-qemu' target, network detection is broken during install
 * generate a random password during build for root login
 * fix ssh: connection seems to hang
+* grub : no graphics
