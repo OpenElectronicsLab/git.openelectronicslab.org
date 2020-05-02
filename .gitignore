@@ -1,0 +1,7 @@
+*.iso
+*.qcow2
+iso
+id_rsa_tmp
+id_rsa_tmp.pub
+*~
+*.swp
