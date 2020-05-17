@@ -331,7 +331,7 @@ tasksel tasksel/first multiselect standard
 d-i pkgsel/include string openssh-server
 # Whether to upgrade packages after debootstrap.
 # Allowed values: none, safe-upgrade, full-upgrade
-#d-i pkgsel/upgrade select none
+d-i pkgsel/upgrade select none
 
 # Some versions of the installer can report back on what software you have
 # installed, and what software you use. The default is not to report back,
@@ -399,7 +399,7 @@ d-i finish-install/reboot_in_progress note
 # reboot into the installed system.
 #d-i debian-installer/exit/halt boolean true
 # This will power off the machine instead of just halting it.
-#d-i debian-installer/exit/poweroff boolean true
+d-i debian-installer/exit/poweroff boolean true
 
 ### Preseeding other packages
 # Depending on what software you choose to install, or if things go wrong
@@ -431,8 +431,19 @@ d-i finish-install/reboot_in_progress note
 # This command is run just before the install finishes, but when there is
 # still a usable /target directory. You can chroot to /target and use it
 # directly, or use the apt-install and in-target commands to easily install
-preseed/late_command string in-target mkdir /root/.ssh ; \
+d-i preseed/late_command string in-target mkdir /root/.ssh ; \
     in-target chmod go-rwx /root/.ssh ; \
     cp /cdrom/authorized_keys /target/root/.ssh/authorized_keys ; \
     in-target chown -R root:root /root/.ssh ; \
-    echo PasswordAuthentication no >> /target/etc/ssh/sshd_config
+    rm /target/etc/ssh/ssh_host*key ; \
+    rm /target/etc/ssh/ssh_host*key.pub ; \
+    cp /cdrom/id_rsa_host_tmp /target/etc/ssh/ssh_host_rsa_key ; \
+    in-target chmod 600 /etc/ssh/ssh_host_rsa_key ; \
+    cp /cdrom/id_rsa_host_tmp.pub /target/etc/ssh/ssh_host_rsa_key.pub ; \
+    echo PasswordAuthentication no >> /target/etc/ssh/sshd_config ; \
+    echo GRUB_TERMINAL=console >> /target/etc/default/grub ; \
+    in-target update-grub
+
+# Verbose output and no boot splash screen.
+d-i debian-installer/quiet boolean false
+d-i debian-installer/splash boolean false
