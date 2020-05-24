@@ -8,3 +8,8 @@
 	* gitlab config
 	* repo contents
 	* more?
+* replicate process to move VNC dev-collaboration into a VM
+	* /etc/vnc.conf set geometry to $geometry = "1680x1050";
+	* add ssvnc scaling instructions to motd
+		* F8 from ssvnc, scaling = 2
+
