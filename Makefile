@@ -4,8 +4,11 @@ ISO_TARGET=debian_autoinstall.iso
 INITIAL_DISK_SIZE=8G
 KVM_CORES=2
 KVM_RAM=512M
-KEYSCAN_TIMEOUT_SECONDS=60
+SSH_MAX_INIT_SECONDS=60
+DELAY=0.1
 QEMU_FORCE_SLEEP=7
+
+RETRIES=$(shell echo "$(SSH_MAX_INIT_SECONDS)/$(DELAY)" | bc)
 
 # $@ : target label
 # $< : the first prerequisite after the colon
@@ -76,9 +79,12 @@ qemu-test : git.openelectronicslab.org.qcow2
 		-m $(KVM_RAM) -smp $(KVM_CORES) -machine type=pc,accel=kvm \
 		-display none \
 		-nic user,hostfwd=tcp:127.0.0.1:10022-:22 &
-	sleep $(QEMU_FORCE_SLEEP)
-	echo "waiting $(KEYSCAN_TIMEOUT_SECONDS) seconds to boot"
-	ssh-keyscan -T $(KEYSCAN_TIMEOUT_SECONDS) -p10022 127.0.0.1 \
+	./retry.sh $(RETRIES) $(DELAY) \
+		ssh -p10022 -oNoHostAuthenticationForLocalhost=yes \
+			root@127.0.0.1 \
+			-i ./id_rsa_tmp \
+			'/bin/true'
+	ssh-keyscan -p10022 127.0.0.1 \
 		| grep `cat id_rsa_host_tmp.pub | cut -f2 -d' '`
 	ssh -p10022 -oNoHostAuthenticationForLocalhost=yes root@127.0.0.1 \
 		-i ./id_rsa_tmp \
