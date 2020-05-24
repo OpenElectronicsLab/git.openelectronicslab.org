@@ -1,4 +1,5 @@
-DEBIAN_ISO_URL=https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-10.3.0-amd64-netinst.iso
+# DEBIAN_ISO_URL=https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-10.4.0-amd64-netinst.iso
+DEBIAN_ISO_URL=https://cdimage.debian.org/mirror/cdimage/archive/10.3.0/amd64/iso-cd/debian-10.3.0-amd64-netinst.iso
 ISO_TARGET=debian_autoinstall.iso
 
 INITIAL_DISK_SIZE=8G
@@ -66,7 +67,7 @@ $(ISO_TARGET): iso/preseed/autoinstall-preseed.seed \
 		-no-emul-boot -boot-load-size 4 -boot-info-table -J -R \
 		-V "Debian AutoInstall" iso
 
-git.openelectronicslab.org.qcow2: $(ISO_TARGET)
+git.openelectronicslab.org.base.qcow2: $(ISO_TARGET)
 	qemu-img create -f qcow2 tmp.qcow2 $(INITIAL_DISK_SIZE)
 	qemu-system-x86_64 -hda tmp.qcow2 -cdrom $(ISO_TARGET) \
 		-m $(KVM_RAM) -smp $(KVM_CORES) -machine type=pc,accel=kvm \
@@ -74,8 +75,11 @@ git.openelectronicslab.org.qcow2: $(ISO_TARGET)
 		-nic user,hostfwd=tcp:127.0.0.1:10022-:22
 	mv tmp.qcow2 $@
 
-qemu-test : git.openelectronicslab.org.qcow2
-	qemu-system-x86_64 -hda $< \
+git.openelectronicslab.org.gitlab.qcow2: git.openelectronicslab.org.base.qcow2
+	cp -v $< git.openelectronicslab.org.gitlab.qcow2
+
+launch-qemu-gitlab: git.openelectronicslab.org.gitlab.qcow2
+	qemu-system-x86_64 -hda git.openelectronicslab.org.gitlab.qcow2 \
 		-m $(KVM_RAM) -smp $(KVM_CORES) -machine type=pc,accel=kvm \
 		-display none \
 		-nic user,hostfwd=tcp:127.0.0.1:10022-:22 &
@@ -86,10 +90,25 @@ qemu-test : git.openelectronicslab.org.qcow2
 			'/bin/true'
 	ssh-keyscan -p10022 127.0.0.1 \
 		| grep `cat id_rsa_host_tmp.pub | cut -f2 -d' '`
+	echo ssh -i ./id_rsa_tmp -p10022 \
+		-oNoHostAuthenticationForLocalhost=yes \
+		root@127.0.0.1
+	echo "kvm running"
+
+shutdown-kvm:
 	ssh -p10022 -oNoHostAuthenticationForLocalhost=yes root@127.0.0.1 \
 		-i ./id_rsa_tmp \
 		'shutdown -h -t 2 now & exit'
 	echo "yay"
+
+install-gitlab: launch-qemu-gitlab install-gitlab.sh
+	scp -P10022 -oNoHostAuthenticationForLocalhost=yes
+		-i ./id_rsa_tmp \
+		./install-gitlab.sh root@127.0.0.1:/root
+	ssh -p10022 -oNoHostAuthenticationForLocalhost=yes root@127.0.0.1 \
+		-i ./id_rsa_tmp \
+		'bash /root/install-gitlab.sh'
+	echo "gitlab-installed"
 
 kill-qemu:
 	kill `ps auxw \
