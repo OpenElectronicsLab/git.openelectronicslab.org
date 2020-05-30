@@ -5,7 +5,7 @@ id_rsa_tmp
 id_rsa_tmp.pub
 id_rsa_host_tmp
 id_rsa_host_tmp.pub
-tmp.cert
+tmp.crt
 tmp.key
 *~
 *.swp
