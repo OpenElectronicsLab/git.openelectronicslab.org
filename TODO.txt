@@ -1,6 +1,9 @@
 * generate a random password during build for root login?
-* install gitlab in the image
-	* configure gitlab?
+* configure gitlab
+	* tmp admin passwd
+	* push this this repo into it
+* connect an ip address to git.openelectroncslab.org
+* configure venus to put a qemu vm to that address
 * back-up-and-restore instance configuration and data
 	* ssh stuff
 	* users?
@@ -11,4 +14,3 @@
 	* /etc/vnc.conf set geometry to $geometry = "1680x1050";
 	* add ssvnc scaling instructions to motd
 		* F8 from ssvnc, scaling = 2
-
