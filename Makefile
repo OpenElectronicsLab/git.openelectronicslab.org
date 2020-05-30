@@ -4,10 +4,12 @@ ISO_TARGET=debian_autoinstall.iso
 
 INITIAL_DISK_SIZE=8G
 KVM_CORES=2
-KVM_RAM=1G
+KVM_DEBIAN_INSTALL_RAM=1G
+KVM_RAM=8G
 SSH_MAX_INIT_SECONDS=60
 DELAY=0.1
 QEMU_FORCE_SLEEP=7
+OPENSSL_TMP_SUBJ="/C=NL/ST=Utrecht/L=Utrecht/O=OpenElectronicsLab/OU=Dev/CN=git.openelectronicslab.org"
 
 RETRIES=$(shell echo "$(SSH_MAX_INIT_SECONDS)/$(DELAY)" | bc)
 
@@ -70,7 +72,8 @@ $(ISO_TARGET): iso/preseed/autoinstall-preseed.seed \
 git.openelectronicslab.org.base.qcow2: $(ISO_TARGET)
 	qemu-img create -f qcow2 tmp.qcow2 $(INITIAL_DISK_SIZE)
 	qemu-system-x86_64 -hda tmp.qcow2 -cdrom $(ISO_TARGET) \
-		-m $(KVM_RAM) -smp $(KVM_CORES) -machine type=pc,accel=kvm \
+		-m $(KVM_DEBIAN_INSTALL_RAM) -smp $(KVM_CORES) \
+		-machine type=pc,accel=kvm \
 		-display curses \
 		-nic user,hostfwd=tcp:127.0.0.1:10022-:22
 	mv tmp.qcow2 $@
@@ -101,8 +104,33 @@ shutdown-kvm:
 		'shutdown -h -t 2 now & exit'
 	echo "yay"
 
-install-gitlab: launch-qemu-gitlab install-gitlab.sh
-	scp -P10022 -oNoHostAuthenticationForLocalhost=yes
+tmp.cert:
+	openssl req -newkey rsa:4096 -x509 -nodes -days 3560 \
+		-subj $(OPENSSL_TMP_SUBJ) \
+		-out tmp.cert \
+		-keyout tmp.key
+	ls -l tmp.*
+
+tmp.key: tmp.cert
+
+
+install-gitlab: launch-qemu-gitlab install-gitlab.sh tmp.cert tmp.key
+	ssh -p10022 -oNoHostAuthenticationForLocalhost=yes root@127.0.0.1 \
+		-i ./id_rsa_tmp \
+		'bash -c "mkdir -pv /etc/gitlab/ssl"'
+	ssh -p10022 -oNoHostAuthenticationForLocalhost=yes root@127.0.0.1 \
+		-i ./id_rsa_tmp \
+		'bash -c "chmod 755 /etc/gitlab/ssl"'
+	scp -P10022 -oNoHostAuthenticationForLocalhost=yes \
+		-i ./id_rsa_tmp \
+		tmp.key tmp.cert root@127.0.0.1:/etc/gitlab/ssl
+	ssh -p10022 -oNoHostAuthenticationForLocalhost=yes root@127.0.0.1 \
+		-i ./id_rsa_tmp \
+		'bash -c "mv -v /etc/gitlab/ssl/tmp.key /etc/gitlab/ssl/git.openelectronicslab.org.key"'
+	ssh -p10022 -oNoHostAuthenticationForLocalhost=yes root@127.0.0.1 \
+		-i ./id_rsa_tmp \
+		'bash -c "mv -v /etc/gitlab/ssl/tmp.cert /etc/gitlab/ssl/git.openelectronicslab.org.cert"'
+	scp -P10022 -oNoHostAuthenticationForLocalhost=yes \
 		-i ./id_rsa_tmp \
 		./install-gitlab.sh root@127.0.0.1:/root
 	ssh -p10022 -oNoHostAuthenticationForLocalhost=yes root@127.0.0.1 \

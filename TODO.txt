@@ -1,9 +1,6 @@
 * generate a random password during build for root login?
-* figure out how to install gitlab
-	* install requires >512M
-	* more memory breaks the low-mem no-graphics mode
-	* https://www.debian.org/releases/jessie/i386/ch05s03.html.en
 * install gitlab in the image
+	* configure gitlab?
 * back-up-and-restore instance configuration and data
 	* ssh stuff
 	* users?
