@@ -5,6 +5,7 @@ id_rsa_tmp
 id_rsa_tmp.pub
 id_rsa_host_tmp
 id_rsa_host_tmp.pub
+tmp_gitlab_admin_passwd
 tmp.crt
 tmp.key
 *~

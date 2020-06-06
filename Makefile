@@ -32,6 +32,7 @@ clean:
 		git.openelectronicslab.org.qcow2 \
 		git.openelectronicslab.org.base.qcow2 \
 		git.openelectronicslab.org.gitlab.qcow2 \
+		tmp_gitlab_admin_passwd \
 		id_rsa_tmp.pub \
 		id_rsa_tmp \
 		id_rsa_host_tmp.pub \
@@ -88,11 +89,8 @@ git.openelectronicslab.org.base.qcow2: $(ISO_TARGET)
 		-nic user,hostfwd=tcp:127.0.0.1:10022-:22
 	mv tmp.qcow2 $@
 
-git.openelectronicslab.org.gitlab.qcow2: git.openelectronicslab.org.base.qcow2
-	cp -v $< git.openelectronicslab.org.gitlab.qcow2
-
 launch-qemu-gitlab: git.openelectronicslab.org.gitlab.qcow2
-	qemu-system-x86_64 -hda git.openelectronicslab.org.gitlab.qcow2 \
+	qemu-system-x86_64 -hda $< \
 		-m $(KVM_RAM) -smp $(KVM_CORES) -machine type=pc,accel=kvm \
 		-display none \
 		-nic user,hostfwd=tcp:127.0.0.1:10443-:443,hostfwd=tcp:127.0.0.1:10022-:22 &
@@ -106,7 +104,8 @@ launch-qemu-gitlab: git.openelectronicslab.org.gitlab.qcow2
 	echo ssh -i ./id_rsa_tmp -p10022 \
 		-oNoHostAuthenticationForLocalhost=yes \
 		root@127.0.0.1
-	echo "kvm running"
+	echo "$@ kvm running"
+
 
 shutdown-kvm:
 	ssh -p10022 -oNoHostAuthenticationForLocalhost=yes root@127.0.0.1 \
@@ -123,33 +122,47 @@ tmp.crt:
 
 tmp.key: tmp.crt
 
+tmp_gitlab_admin_passwd:
+	cat /dev/urandom \
+		| tr -dc 'a-zA-Z0-9' \
+		| fold -w $${1:-32} \
+		| head -n 1 > ./tmp_gitlab_admin_passwd
 
-install-gitlab: launch-qemu-gitlab install-gitlab.sh tmp.crt tmp.key
-	ssh -p10022 -oNoHostAuthenticationForLocalhost=yes root@127.0.0.1 \
-		-i ./id_rsa_tmp \
-		'bash -c "mkdir -pv /etc/gitlab/ssl"'
-	ssh -p10022 -oNoHostAuthenticationForLocalhost=yes root@127.0.0.1 \
-		-i ./id_rsa_tmp \
-		'bash -c "chmod 755 /etc/gitlab/ssl"'
+GITLAB_SCP_FILES=tmp.key tmp.crt install-gitlab.sh tmp_gitlab_admin_passwd
+
+git.openelectronicslab.org.gitlab.qcow2: $(GITLAB_SCP_FILES) \
+		git.openelectronicslab.org.base.qcow2
+	cp -v git.openelectronicslab.org.base.qcow2 \
+		git.openelectronicslab.org.pre-gitlab.qcow2
+	qemu-system-x86_64 -hda git.openelectronicslab.org.pre-gitlab.qcow2 \
+		-m $(KVM_RAM) -smp $(KVM_CORES) -machine type=pc,accel=kvm \
+		-display none \
+		-nic user,hostfwd=tcp:127.0.0.1:10443-:443,hostfwd=tcp:127.0.0.1:10022-:22 &
+	./retry.sh $(RETRIES) $(DELAY) \
+		ssh -p10022 -oNoHostAuthenticationForLocalhost=yes \
+			root@127.0.0.1 \
+			-i ./id_rsa_tmp \
+			'/bin/true'
+	ssh-keyscan -p10022 127.0.0.1 \
+		| grep `cat id_rsa_host_tmp.pub | cut -f2 -d' '`
+	echo ssh -i ./id_rsa_tmp -p10022 \
+		-oNoHostAuthenticationForLocalhost=yes \
+		root@127.0.0.1
 	scp -P10022 -oNoHostAuthenticationForLocalhost=yes \
 		-i ./id_rsa_tmp \
-		tmp.key tmp.crt root@127.0.0.1:/etc/gitlab/ssl
-	ssh -p10022 -oNoHostAuthenticationForLocalhost=yes root@127.0.0.1 \
-		-i ./id_rsa_tmp \
-		'bash -c "mv -v /etc/gitlab/ssl/tmp.key /etc/gitlab/ssl/git.openelectronicslab.org.key"'
-	ssh -p10022 -oNoHostAuthenticationForLocalhost=yes root@127.0.0.1 \
-		-i ./id_rsa_tmp \
-		'bash -c "mv -v /etc/gitlab/ssl/tmp.crt /etc/gitlab/ssl/git.openelectronicslab.org.crt"'
-	scp -P10022 -oNoHostAuthenticationForLocalhost=yes \
-		-i ./id_rsa_tmp \
-		./install-gitlab.sh root@127.0.0.1:/root
+		$(GITLAB_SCP_FILES) root@127.0.0.1:/root
 	ssh -p10022 -oNoHostAuthenticationForLocalhost=yes root@127.0.0.1 \
 		-i ./id_rsa_tmp \
 		'bash /root/install-gitlab.sh'
 	ssh -p10022 -oNoHostAuthenticationForLocalhost=yes root@127.0.0.1 \
 		-i ./id_rsa_tmp \
-		'bash -c "gitlab-ctl reconfigure"'
-	echo "gitlab-installed"
+		'shutdown -h -t 2 now & exit'
+	echo 'todo verify this is not a race'
+	mv -v git.openelectronicslab.org.pre-gitlab.qcow2 \
+		git.openelectronicslab.org.gitlab.qcow2
+
+install-gitlab: git.openelectronicslab.org.gitlab.qcow2
+	true
 
 kill-qemu:
 	kill `ps auxw \
