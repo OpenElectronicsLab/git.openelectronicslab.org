@@ -6,6 +6,7 @@ INITIAL_DISK_SIZE=8G
 KVM_CORES=2
 KVM_DEBIAN_INSTALL_RAM=1G
 KVM_RAM=8G
+LIBVIRT_RAM=8192
 SSH_MAX_INIT_SECONDS=60
 DELAY=0.1
 QEMU_FORCE_SLEEP=7
@@ -32,6 +33,8 @@ clean:
 		git.openelectronicslab.org.qcow2 \
 		git.openelectronicslab.org.base.qcow2 \
 		git.openelectronicslab.org.gitlab.qcow2 \
+		git.openelectronicslab.org.libvirt.qcow2 \
+		libvirt_mac_address \
 		tmp_gitlab_admin_passwd \
 		id_rsa_tmp.pub \
 		id_rsa_tmp \
@@ -180,3 +183,33 @@ id_rsa_host_tmp:
 
 id_rsa_host_tmp.pub: id_rsa_host_tmp
 
+
+libvirt_mac_address:
+	echo "52:54:00:00:00:02" > libvirt_mac_address
+
+remove-libvirt:
+	-sudo virsh destroy git.openelectronicslab.org
+	-sudo virsh undefine git.openelectronicslab.org
+
+add-to-libvirt: git.openelectronicslab.org.gitlab.qcow2 libvirt_mac_address
+	cp -v git.openelectronicslab.org.gitlab.qcow2 \
+		git.openelectronicslab.org.libvirt.qcow2
+	# -sudo virsh net-start default
+	-sudo virsh net-update default delete ip-dhcp-host \
+		'<host mac="$(shell cat libvirt_mac_address)" ip="192.168.122.2" />' \
+		--live --config --parent-index=0
+	# sudo virsh net-update default add-last ip-dhcp-host \
+	#	'<host mac="$(shell cat libvirt_mac_address)" ip="192.168.122.2" />' \
+	#	--live --config --parent-index=0
+	# sudo virsh net-destroy default
+	# sudo virsh net-start default
+	#
+	#	--network network=default,mac=$(shell cat libvirt_mac_address)
+	sudo virt-install --connect qemu:///system --ram $(LIBVIRT_RAM) \
+		-n git.openelectronicslab.org \
+		--os-type=linux --os-variant=debian10 \
+		--disk path=./git.openelectronicslab.org.libvirt.qcow2,device=disk,format=qcow2 \
+		--graphics vnc --noautoconsole \
+		--vcpus=2 --import
+
+#	"87.233.128.196" ip="192.168.122.2"

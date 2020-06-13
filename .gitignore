@@ -8,5 +8,6 @@ id_rsa_host_tmp.pub
 tmp_gitlab_admin_passwd
 tmp.crt
 tmp.key
+libvirt_mac_address
 *~
 *.swp
