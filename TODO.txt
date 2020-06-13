@@ -1,6 +1,5 @@
 * generate a random password during build for root login?
 * configure gitlab
-	* tmp admin passwd
 	* push this this repo into it
 * connect an ip address to git.openelectroncslab.org
 * configure venus to put a qemu vm to that address
