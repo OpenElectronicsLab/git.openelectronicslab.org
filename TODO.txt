@@ -1,6 +1,11 @@
 * ssl cert
 * fix http redirect to https
 * back-up-and-restore instance configuration and data
+	* create a test project by hand
+	* backup should should complete then create and restore to a local
+		qemu and verify some of the contents including the test project
+	* test a real restore including loading ssh keys and swapping the
+		running instance
 	* ssh stuff - set up backup user
 	* users?
 	* gitlab config

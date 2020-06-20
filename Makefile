@@ -204,6 +204,7 @@ NOW=`date --utc +"%Y%m%dT%H%M%SZ"`
 
 backup:
 	# TODO: add backup user, id_rsa_tmp will be wrong
+	# TODO: backup the ssh keys
 	ssh root@git.openelectronicslab.org \
 		-i ./id_rsa_tmp \
 		'bash gitlab-backup create'
@@ -217,3 +218,20 @@ backup:
 	cp -v /backups/git.openelectronicslab.org/gitlab.rb \
 		/backups/git.openelectronicslab.org/gitlab.$(NOW).rb
 
+restore:
+	# TODO: restore this to a temp instance, not the running instance
+	#	after restore has succeeded, replace running instance
+	# TODO: restore the ssh keys
+	scp -i ./id_rsa_tmp -r \
+		/backups/git.openelectronicslab.org/backups/* \
+		root@git.openelectronicslab.org:/var/opt/gitlab/backups/
+	scp -i ./id_rsa_tmp \
+		/backups/git.openelectronicslab.org/gitlab.rb \
+		/backups/git.openelectronicslab.org/gitlab-secrets.json \
+		root@git.openelectronicslab.org:/etc/gitlab/
+	scp -i ./id_rsa_tmp \
+		./restore-gitlab.sh \
+		root@git.openelectronicslab.org:/root/
+	ssh root@git.openelectronicslab.org \
+		-i ./id_rsa_tmp \
+		'bash /root/restore-gitlab.sh'
