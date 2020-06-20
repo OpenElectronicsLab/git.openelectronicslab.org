@@ -197,4 +197,5 @@ install: /var/images git.openelectronicslab.org.gitlab.qcow2 \
 		/etc/systemd/system/qemu-git-openelectronicslab.service
 	cp -v git.openelectronicslab.org.gitlab.qcow2 \
 		/var/images/git.openelectronicslab.org.gitlab.qcow2
+	systemctl daemon-reload
 	systemctl start qemu-git-openelectronicslab
