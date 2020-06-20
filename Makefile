@@ -2,6 +2,8 @@
 DEBIAN_ISO_URL=https://cdimage.debian.org/mirror/cdimage/archive/10.3.0/amd64/iso-cd/debian-10.3.0-amd64-netinst.iso
 ISO_TARGET=debian_autoinstall.iso
 
+IMAGE_DIR=/var/images
+
 INITIAL_DISK_SIZE=8G
 KVM_CORES=2
 KVM_DEBIAN_INSTALL_RAM=1G
@@ -183,6 +185,22 @@ id_rsa_host_tmp:
 
 id_rsa_host_tmp.pub: id_rsa_host_tmp
 
+/var/images:
+	mkdir -pv /var/images
+
+install: /var/images git.openelectronicslab.org.gitlab.qcow2 \
+		stop-qemu-git-openelectronicslab.sh \
+		start-qemu-git-openelectronicslab.sh \
+		qemu-git-openelectronicslab.service
+	-systemctl stop qemu-git-openelectronicslab
+	cp -v stop-qemu-git-openelectronicslab.sh /var/images/
+	cp -v start-qemu-git-openelectronicslab.sh /var/images/
+	cp -v qemu-git-openelectronicslab.service /var/images/
+	-ln -s /var/images/qemu-git-openelectronicslab.service \
+		/etc/systemd/system/qemu-git-openelectronicslab.service
+	cp -v git.openelectronicslab.org.gitlab.qcow2 \
+		/var/images/git.openelectronicslab.org.gitlab.qcow2
+	systemctl start qemu-git-openelectronicslab
 
 libvirt_mac_address:
 	echo "52:54:00:00:00:02" > libvirt_mac_address
