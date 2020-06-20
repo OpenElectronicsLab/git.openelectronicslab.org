@@ -1,14 +1,14 @@
-* generate a random password during build for root login?
-* configure gitlab
-	* push this this repo into it
-* connect an ip address to git.openelectroncslab.org
-* configure venus to put a qemu vm to that address
+* ssl cert
+* fix http redirect to https
 * back-up-and-restore instance configuration and data
-	* ssh stuff
+	* ssh stuff - set up backup user
 	* users?
 	* gitlab config
 	* repo contents
 	* more?
+* generate a random password during build for root login?
+* configure gitlab
+	* push this this repo into it
 * replicate process to move VNC dev-collaboration into a VM
 	* /etc/vnc.conf set geometry to $geometry = "1680x1050";
 	* add ssvnc scaling instructions to motd

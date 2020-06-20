@@ -199,3 +199,21 @@ install: /var/images git.openelectronicslab.org.gitlab.qcow2 \
 		/var/images/git.openelectronicslab.org.gitlab.qcow2
 	systemctl daemon-reload
 	systemctl start qemu-git-openelectronicslab
+
+NOW=`date --utc +"%Y%m%dT%H%M%SZ"`
+
+backup:
+	# TODO: add backup user, id_rsa_tmp will be wrong
+	ssh root@git.openelectronicslab.org \
+		-i ./id_rsa_tmp \
+		'bash gitlab-backup create'
+	scp -i ./id_rsa_tmp -r \
+		root@git.openelectronicslab.org:/var/opt/gitlab/backups \
+		root@git.openelectronicslab.org:/etc/gitlab/gitlab-secrets.json \
+		root@git.openelectronicslab.org:/etc/gitlab/gitlab.rb \
+		/backups/git.openelectronicslab.org/
+	cp -v /backups/git.openelectronicslab.org/gitlab-secrets.json \
+		/backups/git.openelectronicslab.org/gitlab-secrets.$(NOW).json
+	cp -v /backups/git.openelectronicslab.org/gitlab.rb \
+		/backups/git.openelectronicslab.org/gitlab.$(NOW).rb
+

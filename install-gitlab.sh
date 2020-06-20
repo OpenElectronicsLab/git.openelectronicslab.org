@@ -12,7 +12,7 @@ chmod -v 644 /etc/gitlab/ssl/git.openelectronicslab.org.key
 
 
 apt-get update
-apt-get install -y curl vim ca-certificates
+apt-get install -y curl rsync vim ca-certificates
 
 debconf-set-selections <<< "postfix postfix/mailname string git.openelectronicslab.org"
 debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
