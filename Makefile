@@ -92,15 +92,17 @@ git.openelectronicslab.org.base.qcow2: $(ISO_TARGET)
 	mv tmp.qcow2 $@
 
 launch-qemu-gitlab: git.openelectronicslab.org.gitlab.qcow2
-	qemu-system-x86_64 -hda $< \
+	 { qemu-system-x86_64 -hda $< \
 		-m $(KVM_RAM) -smp $(KVM_CORES) -machine type=pc,accel=kvm \
 		-display none \
-		-nic user,hostfwd=tcp:127.0.0.1:10443-:443,hostfwd=tcp:127.0.0.1:10022-:22 &
+		-nic user,hostfwd=tcp:127.0.0.1:10443-:443,hostfwd=tcp:127.0.0.1:10022-:22 & \
+		echo "$$!" > 'qemu.pid' ; }
 	./retry.sh $(RETRIES) $(DELAY) \
 		ssh -p10022 -oNoHostAuthenticationForLocalhost=yes \
 			root@127.0.0.1 \
 			-i ./id_rsa_tmp \
 			'/bin/true'
+	echo "check the key matches the one we generated"
 	ssh-keyscan -p10022 127.0.0.1 \
 		| grep `cat id_rsa_host_tmp.pub | cut -f2 -d' '`
 	echo ssh -i ./id_rsa_tmp -p10022 \
@@ -113,6 +115,8 @@ shutdown-kvm:
 	ssh -p10022 -oNoHostAuthenticationForLocalhost=yes root@127.0.0.1 \
 		-i ./id_rsa_tmp \
 		'shutdown -h -t 2 now & exit'
+	{ while kill -0 `cat qemu.pid`; do echo "wating for `cat qemu.pid`"; sleep 1; done }
+	sleep 1
 	echo "yay"
 
 tmp.crt:
@@ -136,10 +140,11 @@ git.openelectronicslab.org.gitlab.qcow2: $(GITLAB_SCP_FILES) \
 		git.openelectronicslab.org.base.qcow2
 	cp -v git.openelectronicslab.org.base.qcow2 \
 		git.openelectronicslab.org.pre-gitlab.qcow2
-	qemu-system-x86_64 -hda git.openelectronicslab.org.pre-gitlab.qcow2 \
+	{ qemu-system-x86_64 -hda git.openelectronicslab.org.pre-gitlab.qcow2 \
 		-m $(KVM_RAM) -smp $(KVM_CORES) -machine type=pc,accel=kvm \
 		-display none \
-		-nic user,hostfwd=tcp:127.0.0.1:10443-:443,hostfwd=tcp:127.0.0.1:10022-:22 &
+		-nic user,hostfwd=tcp:127.0.0.1:10443-:443,hostfwd=tcp:127.0.0.1:10022-:22 \
+		& echo "$$!" > qemu.pid; }
 	./retry.sh $(RETRIES) $(DELAY) \
 		ssh -p10022 -oNoHostAuthenticationForLocalhost=yes \
 			root@127.0.0.1 \
@@ -159,7 +164,8 @@ git.openelectronicslab.org.gitlab.qcow2: $(GITLAB_SCP_FILES) \
 	ssh -p10022 -oNoHostAuthenticationForLocalhost=yes root@127.0.0.1 \
 		-i ./id_rsa_tmp \
 		'shutdown -h -t 2 now & exit'
-	echo 'todo verify this is not a race'
+	{ while kill -0 `cat qemu.pid`; do echo "wating for `cat qemu.pid`"; sleep 1; done }
+	sleep 1
 	mv -v git.openelectronicslab.org.pre-gitlab.qcow2 \
 		git.openelectronicslab.org.gitlab.qcow2
 
@@ -167,10 +173,11 @@ install-gitlab: git.openelectronicslab.org.gitlab.qcow2
 	true
 
 kill-qemu:
-	kill `ps auxw \
-		| grep "qemu-system-x86_64" \
-		| grep -v grep \
+	-kill `ps auxw \
+		| grep "[q]emu-system-x86_64" \
+		| grep "^$(USER)" \
 		| sed -e "s/$(USER) *\([0-9]*\).*/\1/g"`
+
 
 id_rsa_tmp:
 	ssh-keygen -b 4096 -t rsa -N "" -C "temporary-key" -f ./id_rsa_tmp
@@ -200,11 +207,12 @@ install: /var/images git.openelectronicslab.org.gitlab.qcow2 \
 	systemctl daemon-reload
 	systemctl start qemu-git-openelectronicslab
 
-NOW=`date --utc +"%Y%m%dT%H%M%SZ"`
+NOW=`cat now_timestamp`
 
-backup:
+git.openelectronicslab.org-tested.qcow2: git.openelectronicslab.org.gitlab.qcow2
 	# TODO: add backup user, id_rsa_tmp will be wrong
 	# TODO: backup the ssh keys
+	date --utc +"%Y%m%dT%H%M%SZ" > now_timestamp
 	ssh root@git.openelectronicslab.org \
 		-i ./id_rsa_tmp \
 		'bash gitlab-backup create'
@@ -217,21 +225,67 @@ backup:
 		/backups/git.openelectronicslab.org/gitlab-secrets.$(NOW).json
 	cp -v /backups/git.openelectronicslab.org/gitlab.rb \
 		/backups/git.openelectronicslab.org/gitlab.$(NOW).rb
+	cp -v $< git.openelectronicslab.org.gitlab-pre-restore.qcow2
+	{ qemu-system-x86_64 \
+		-hda git.openelectronicslab.org.gitlab-pre-restore.qcow2 \
+		-m $(KVM_RAM) -smp $(KVM_CORES) -machine type=pc,accel=kvm \
+		-display none \
+		-nic user,hostfwd=tcp:127.0.0.1:10443-:443,hostfwd=tcp:127.0.0.1:10022-:22 & echo $$! > qemu.pid ; }
+	./retry.sh $(RETRIES) $(DELAY) \
+		ssh -p10022 -oNoHostAuthenticationForLocalhost=yes \
+			root@127.0.0.1 \
+			-i ./id_rsa_tmp \
+			'/bin/true'
+	scp -P10022 -oNoHostAuthenticationForLocalhost=yes -i ./id_rsa_tmp \
+		-r /backups/git.openelectronicslab.org/backups/* \
+		root@127.0.0.1:/var/opt/gitlab/backups/
+	scp -P10022 -oNoHostAuthenticationForLocalhost=yes -i ./id_rsa_tmp \
+		/backups/git.openelectronicslab.org/gitlab.rb \
+		/backups/git.openelectronicslab.org/gitlab-secrets.json \
+		root@127.0.0.1:/etc/gitlab/
+	scp -P10022 -oNoHostAuthenticationForLocalhost=yes -i ./id_rsa_tmp \
+		./restore-gitlab.sh \
+		root@127.0.0.1:/root/
+	ssh -p10022 -oNoHostAuthenticationForLocalhost=yes root@127.0.0.1 \
+		-i ./id_rsa_tmp \
+		'bash /root/restore-gitlab.sh'
+	# TODO: restore keys and such, reconnect with new keys
+	ssh -p10022 -oNoHostAuthenticationForLocalhost=yes root@127.0.0.1 \
+		-i ./id_rsa_tmp \
+		'shutdown -h -t 2 now & exit'
+	{ while kill -0 `cat qemu.pid`; do echo "wating for `cat qemu.pid`"; sleep 1; done }
+	sleep 1
+	mv -v git.openelectronicslab.org.gitlab-pre-restore.qcow2 \
+		git.openelectronicslab.org.gitlab-post-restore.qcow2
+	# start in "-snapshot" mode to avoid changing the file
+	{ qemu-system-x86_64 -snapshot \
+		-hda git.openelectronicslab.org.gitlab-post-restore.qcow2 \
+		-m $(KVM_RAM) -smp $(KVM_CORES) -machine type=pc,accel=kvm \
+		-display none \
+		-nic user,hostfwd=tcp:127.0.0.1:10443-:443,hostfwd=tcp:127.0.0.1:10022-:22 \
+		& echo "$$!" > qemu.pid; }
+	./retry.sh $(RETRIES) $(DELAY) \
+		ssh -p10022 -oNoHostAuthenticationForLocalhost=yes \
+			root@127.0.0.1 \
+			-i ./id_rsa_tmp \
+			'/bin/true'
+	# run verification tests
+	# TODO: test more than we have Ace
+	wget -qO- --no-check-certificate \
+		https://127.0.0.1:10443/api/v4/users?username=ace-dvm \
+		| jq .[].name \
+		| grep 'Medlock'
+	kill `cat qemu.pid`
+	mv -v git.openelectronicslab.org.gitlab-post-restore.qcow2
+		git.openelectronicslab.org.gitlab-post-restore.$(NOW).qcow2
+	rm -fv $@
+	ln -sv git.openelectronicslab.org.gitlab-post-restore.$(NOW).qcow2 $@
 
-restore:
+backup: git.openelectronicslab.org-tested.qcow2
+
+
+# restore: git.openelectronicslab.org-tested.qcow2
+	# take the qcow2 image and replace the running one.
 	# TODO: restore this to a temp instance, not the running instance
 	#	after restore has succeeded, replace running instance
 	# TODO: restore the ssh keys
-	scp -i ./id_rsa_tmp -r \
-		/backups/git.openelectronicslab.org/backups/* \
-		root@git.openelectronicslab.org:/var/opt/gitlab/backups/
-	scp -i ./id_rsa_tmp \
-		/backups/git.openelectronicslab.org/gitlab.rb \
-		/backups/git.openelectronicslab.org/gitlab-secrets.json \
-		root@git.openelectronicslab.org:/etc/gitlab/
-	scp -i ./id_rsa_tmp \
-		./restore-gitlab.sh \
-		root@git.openelectronicslab.org:/root/
-	ssh root@git.openelectronicslab.org \
-		-i ./id_rsa_tmp \
-		'bash /root/restore-gitlab.sh'
