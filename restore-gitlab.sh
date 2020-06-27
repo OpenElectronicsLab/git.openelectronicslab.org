@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 
 chown -Rv git:git /var/opt/gitlab/backups/*
 
@@ -11,7 +12,10 @@ gitlab-ctl stop sidekiq
 echo 'Verify'
 gitlab-ctl status
 
-BACKUP=`ls -1 /var/opt/gitlab/backups/ | tail -n1 | sed -e's/\(.*\)_gitlab_backup.tar/\1/'`
+echo "TODO: this is *Very* fragile; we should pass this name in!"
+BACKUP=`ls -tr1 /var/opt/gitlab/backups/*gitlab_backup.tar | tail -n1 | sed -e's@.*/\(.*\)_gitlab_backup.tar@\1@'`
+echo "BACKUP='$BACKUP'"
+
 
 sed -i -e's/gitlab-rake/gitlab-rake --verbose/g' /usr/bin/gitlab-backup
 gitlab-backup restore BACKUP=$BACKUP
