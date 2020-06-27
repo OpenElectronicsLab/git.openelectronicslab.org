@@ -27,7 +27,7 @@ export EXTERNAL_URL="https://git.openelectronicslab.org"
 export GITLAB_ROOT_EMAIL="root@git.openelectronicslab.org"
 export RAILS_ENV=production
 
-apt-get install gitlab-ce
+apt-get install gitlab-ce=13.0.6-ce.0
 
 gitlab-ctl reconfigure
 
