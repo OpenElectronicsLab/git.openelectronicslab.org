@@ -1,7 +1,8 @@
 #!/bin/bash
 set -x
 
-chown -Rv git:git /var/opt/gitlab/backups/*
+chown -Rv git:git /var/opt/gitlab/backups*
+ls -l /var/opt/gitlab/backups
 
 gitlab-ctl reconfigure
 gitlab-ctl start
@@ -18,8 +19,22 @@ echo "BACKUP='$BACKUP'"
 
 
 sed -i -e's/gitlab-rake/gitlab-rake --verbose/g' /usr/bin/gitlab-backup
-gitlab-backup restore BACKUP=$BACKUP
+echo ""
+echo "========= gitlab-backup restore BACKUP=$BACKUP ========="
+echo ""
+gitlab-backup restore BACKUP=$BACKUP force=yes
 
+echo ""
+echo "========= gitlab-ctl reconfigure ========="
+echo ""
 gitlab-ctl reconfigure
+
+echo ""
+echo "========= gitlab-ctl restart ========="
+echo ""
 gitlab-ctl restart
+
+echo ""
+echo "========= gitlab-rake --verbose gitlab:check SANITIZE=true  ========="
+echo ""
 gitlab-rake --verbose gitlab:check SANITIZE=true
