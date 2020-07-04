@@ -28,6 +28,7 @@ export GITLAB_ROOT_EMAIL="root@git.openelectronicslab.org"
 export RAILS_ENV=production
 
 apt-get install gitlab-ce=13.0.6-ce.0
+apt-mark hold gitlab-ce=13.0.6-ce.0
 
 gitlab-ctl reconfigure
 
