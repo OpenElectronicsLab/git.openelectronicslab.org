@@ -3,6 +3,7 @@ DEBIAN_ISO_URL=https://cdimage.debian.org/mirror/cdimage/archive/10.3.0/amd64/is
 ISO_TARGET=debian_autoinstall.iso
 
 IMAGE_DIR=/var/images
+QCOW_FILE=$(IMAGE_DIR)/git.openelectronicslab.org.gitlab.qcow2
 
 INITIAL_DISK_SIZE=8G
 KVM_CORES=2
@@ -292,9 +293,21 @@ git.openelectronicslab.org-tested.qcow2: git.openelectronicslab.org.gitlab.qcow2
 	rm -fv $@
 	ln -sv git.openelectronicslab.org.gitlab-post-restore.$(NOW).qcow2 $@
 
+# TODO: backup should run every time "make backup" is called
+#	rather than depend on the presence of the "foo.tested.qcow2"
 backup: git.openelectronicslab.org-tested.qcow2
 
+# TODO separate the making of a backup from testing of a backup
+redeploy: git.openelectronicslab.org-tested.qcow2
+	echo "shut down running instance"
+	systemctl --type=service --state=running
+	systemctl stop qemu-git-openelectronicslab.service
+	echo "copy new file into place"
+	mv -v $(QCOW_FILE) $(QCOW_FILE).`date --utc +"%Y%m%dT%H%M%SZ"`
+	cp -v git.openelectronicslab.org-tested.qcow2 $(QCOW_FILE)
+	systemctl start qemu-git-openelectronicslab.service
 
+# TODO: restore from disaster, no running instance
 # restore: git.openelectronicslab.org-tested.qcow2
 	# take the qcow2 image and replace the running one.
 	# TODO: restore this to a temp instance, not the running instance
