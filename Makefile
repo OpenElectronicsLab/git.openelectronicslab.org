@@ -279,8 +279,8 @@ git.openelectronicslab.org-tested.qcow2: git.openelectronicslab.org.gitlab.qcow2
 			-i ./id_rsa_tmp \
 			'/bin/true'
 	# run verification tests
-	echo rails takes seemingly an eternity to start
-	{ false; while [ $$? -ne 0 ]; do sleep 1; date; wget -qO- --no-check-certificate https://127.0.0.1:10443; done; }
+	echo rails takes seemingly an eternity to start, will try for 2 minutes
+	./retry.sh 120 1 wget -qO- --no-check-certificate https://127.0.0.1:10443
 	# TODO: test more than we have Ace
 	wget -qO- --no-check-certificate \
 		https://127.0.0.1:10443/api/v4/users?username=ace-dvm \
