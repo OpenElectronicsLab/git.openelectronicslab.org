@@ -83,6 +83,7 @@ $(ISO_TARGET): iso/preseed/autoinstall-preseed.seed \
 		-V "Debian AutoInstall" iso
 
 git.openelectronicslab.org.base.qcow2: $(ISO_TARGET)
+	{ lsof -i:10022; if [ $$? -eq 0 ]; then echo "port 10022 not free"; false; fi; }
 	qemu-img create -f qcow2 tmp.qcow2 $(INITIAL_DISK_SIZE)
 	qemu-system-x86_64 -hda tmp.qcow2 -cdrom $(ISO_TARGET) \
 		-m $(KVM_DEBIAN_INSTALL_RAM) -smp $(KVM_CORES) \
@@ -92,7 +93,9 @@ git.openelectronicslab.org.base.qcow2: $(ISO_TARGET)
 	mv tmp.qcow2 $@
 
 launch-qemu-gitlab: git.openelectronicslab.org.gitlab.qcow2
-	 { qemu-system-x86_64 -hda $< \
+	{ lsof -i:10022; if [ $$? -eq 0 ]; then echo "port 10022 not free"; false; fi; }
+	{ lsof -i:10443; if [ $$? -eq 0 ]; then echo "port 10443 not free"; false; fi; }
+	{ qemu-system-x86_64 -hda $< \
 		-m $(KVM_RAM) -smp $(KVM_CORES) -machine type=pc,accel=kvm \
 		-display none \
 		-nic user,hostfwd=tcp:127.0.0.1:10443-:443,hostfwd=tcp:127.0.0.1:10022-:22 & \
@@ -138,6 +141,8 @@ GITLAB_SCP_FILES=tmp.key tmp.crt install-gitlab.sh tmp_gitlab_admin_passwd
 
 git.openelectronicslab.org.gitlab.qcow2: $(GITLAB_SCP_FILES) \
 		git.openelectronicslab.org.base.qcow2
+	{ lsof -i:10022; if [ $$? -eq 0 ]; then echo "port 10022 not free"; false; fi; }
+	{ lsof -i:10443; if [ $$? -eq 0 ]; then echo "port 10443 not free"; false; fi; }
 	cp -v git.openelectronicslab.org.base.qcow2 \
 		git.openelectronicslab.org.pre-gitlab.qcow2
 	{ qemu-system-x86_64 -hda git.openelectronicslab.org.pre-gitlab.qcow2 \
@@ -210,6 +215,8 @@ install: /var/images git.openelectronicslab.org.gitlab.qcow2 \
 NOW=`cat now_timestamp`
 
 git.openelectronicslab.org-tested.qcow2: git.openelectronicslab.org.gitlab.qcow2
+	{ lsof -i:10022; if [ $$? -eq 0 ]; then echo "port 10022 not free"; false; fi; }
+	{ lsof -i:10443; if [ $$? -eq 0 ]; then echo "port 10443 not free"; false; fi; }
 	# TODO: add backup user, id_rsa_tmp will be wrong
 	# TODO: backup the ssh keys
 	date --utc +"%Y%m%dT%H%M%SZ" > now_timestamp
@@ -255,6 +262,8 @@ git.openelectronicslab.org-tested.qcow2: git.openelectronicslab.org.gitlab.qcow2
 		'shutdown -h -t 2 now & exit'
 	{ while kill -0 `cat qemu.pid`; do echo "wating for `cat qemu.pid`"; sleep 1; done }
 	sleep 2
+	{ lsof -i:10022; if [ $$? -eq 0 ]; then echo "port 10022 not free"; false; fi; }
+	{ lsof -i:10443; if [ $$? -eq 0 ]; then echo "port 10443 not free"; false; fi; }
 	mv -v git.openelectronicslab.org.gitlab-pre-restore.qcow2 \
 		git.openelectronicslab.org.gitlab-post-restore.qcow2
 	# start in "-snapshot" mode to avoid changing the file
