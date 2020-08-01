@@ -254,7 +254,7 @@ git.openelectronicslab.org-tested.qcow2: git.openelectronicslab.org.gitlab.qcow2
 		-i ./id_rsa_tmp \
 		'shutdown -h -t 2 now & exit'
 	{ while kill -0 `cat qemu.pid`; do echo "wating for `cat qemu.pid`"; sleep 1; done }
-	sleep 1
+	sleep 2
 	mv -v git.openelectronicslab.org.gitlab-pre-restore.qcow2 \
 		git.openelectronicslab.org.gitlab-post-restore.qcow2
 	# start in "-snapshot" mode to avoid changing the file
@@ -270,13 +270,15 @@ git.openelectronicslab.org-tested.qcow2: git.openelectronicslab.org.gitlab.qcow2
 			-i ./id_rsa_tmp \
 			'/bin/true'
 	# run verification tests
+	echo rails takes seemingly an eternity to start
+	{ false; while [ $$? -ne 0 ]; do sleep 1; date; wget -qO- --no-check-certificate https://127.0.0.1:10443; done; }
 	# TODO: test more than we have Ace
 	wget -qO- --no-check-certificate \
 		https://127.0.0.1:10443/api/v4/users?username=ace-dvm \
 		| jq .[].name \
 		| grep 'Medlock'
 	kill `cat qemu.pid`
-	mv -v git.openelectronicslab.org.gitlab-post-restore.qcow2
+	mv -v git.openelectronicslab.org.gitlab-post-restore.qcow2 \
 		git.openelectronicslab.org.gitlab-post-restore.$(NOW).qcow2
 	rm -fv $@
 	ln -sv git.openelectronicslab.org.gitlab-post-restore.$(NOW).qcow2 $@
