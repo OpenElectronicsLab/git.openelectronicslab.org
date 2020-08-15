@@ -5,6 +5,8 @@ ISO_TARGET=debian_autoinstall.iso
 IMAGE_DIR=/var/images
 QCOW_FILE=$(IMAGE_DIR)/git.openelectronicslab.org.gitlab.qcow2
 
+BACKUPS_DIR=/backups/git.openelectronicslab.org
+
 INITIAL_DISK_SIZE=8G
 KVM_CORES=2
 KVM_DEBIAN_INSTALL_RAM=1G
@@ -224,12 +226,12 @@ git.openelectronicslab.org-tested.qcow2: git.openelectronicslab.org.gitlab.qcow2
 	ssh root@git.openelectronicslab.org \
 		-i ./id_rsa_tmp \
 		'bash gitlab-backup create'
-	mkdir -pv /backups/git.openelectronicslab.org/$(NOW)
-	rm -fv /backups/git.openelectronicslab.org/latest
-	ln -s /backups/git.openelectronicslab.org/$(NOW) \
-		/backups/git.openelectronicslab.org/latest
-	cp -v ./id_rsa_tmp /backups/git.openelectronicslab.org/latest/
-	cp -v ./id_rsa_tmp.pub /backups/git.openelectronicslab.org/latest/
+	mkdir -pv $(BACKUPS_DIR)/$(NOW)
+	rm -fv $(BACKUPS_DIR)/latest
+	ln -s $(BACKUPS_DIR)/$(NOW) \
+		$(BACKUPS_DIR)/latest
+	cp -v ./id_rsa_tmp $(BACKUPS_DIR)/latest/
+	cp -v ./id_rsa_tmp.pub $(BACKUPS_DIR)/latest/
 	scp -i ./id_rsa_tmp -r \
 		root@git.openelectronicslab.org:/root/.ssh/authorized_keys \
 		root@git.openelectronicslab.org:/etc/ssh/ssh_host_rsa_key \
@@ -237,7 +239,7 @@ git.openelectronicslab.org-tested.qcow2: git.openelectronicslab.org.gitlab.qcow2
 		root@git.openelectronicslab.org:/etc/gitlab/gitlab-secrets.json \
 		root@git.openelectronicslab.org:/etc/gitlab/gitlab.rb \
 		root@git.openelectronicslab.org:/var/opt/gitlab/backups \
-		/backups/git.openelectronicslab.org/latest
+		$(BACKUPS_DIR)/latest
 	cp -v $< git.openelectronicslab.org.gitlab-pre-restore.qcow2
 	{ qemu-system-x86_64 \
 		-hda git.openelectronicslab.org.gitlab-pre-restore.qcow2 \
@@ -250,11 +252,11 @@ git.openelectronicslab.org-tested.qcow2: git.openelectronicslab.org.gitlab.qcow2
 			-i ./id_rsa_tmp \
 			'/bin/true'
 	scp -P10022 -oNoHostAuthenticationForLocalhost=yes -i ./id_rsa_tmp \
-		-r /backups/git.openelectronicslab.org/latest/backups/* \
+		-r $(BACKUPS_DIR)/latest/backups/* \
 		root@127.0.0.1:/var/opt/gitlab/backups/
 	scp -P10022 -oNoHostAuthenticationForLocalhost=yes -i ./id_rsa_tmp \
-		/backups/git.openelectronicslab.org/latest/gitlab.rb \
-		/backups/git.openelectronicslab.org/latest/gitlab-secrets.json \
+		$(BACKUPS_DIR)/latest/gitlab.rb \
+		$(BACKUPS_DIR)/latest/gitlab-secrets.json \
 		root@127.0.0.1:/etc/gitlab/
 	scp -P10022 -oNoHostAuthenticationForLocalhost=yes -i ./id_rsa_tmp \
 		./restore-gitlab.sh \
