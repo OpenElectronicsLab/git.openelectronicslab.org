@@ -197,21 +197,21 @@ id_rsa_host_tmp:
 
 id_rsa_host_tmp.pub: id_rsa_host_tmp
 
-/var/images:
-	mkdir -pv /var/images
+$(IMAGE_DIR):
+	mkdir -pv $(IMAGE_DIR)
 
-install: /var/images git.openelectronicslab.org.gitlab.qcow2 \
+install: $(IMAGE_DIR) git.openelectronicslab.org.gitlab.qcow2 \
 		stop-qemu-git-openelectronicslab.sh \
 		start-qemu-git-openelectronicslab.sh \
 		qemu-git-openelectronicslab.service
 	-systemctl stop qemu-git-openelectronicslab
-	cp -v stop-qemu-git-openelectronicslab.sh /var/images/
-	cp -v start-qemu-git-openelectronicslab.sh /var/images/
-	cp -v qemu-git-openelectronicslab.service /var/images/
-	-ln -s /var/images/qemu-git-openelectronicslab.service \
+	cp -v stop-qemu-git-openelectronicslab.sh $(IMAGE_DIR)/
+	cp -v start-qemu-git-openelectronicslab.sh $(IMAGE_DIR)/
+	cp -v qemu-git-openelectronicslab.service $(IMAGE_DIR)/
+	-ln -s $(IMAGE_DIR)/qemu-git-openelectronicslab.service \
 		/etc/systemd/system/qemu-git-openelectronicslab.service
 	cp -v git.openelectronicslab.org.gitlab.qcow2 \
-		/var/images/git.openelectronicslab.org.gitlab.qcow2
+		$(IMAGE_DIR)/git.openelectronicslab.org.gitlab.qcow2
 	systemctl daemon-reload
 	systemctl start qemu-git-openelectronicslab
 
