@@ -228,6 +228,8 @@ git.openelectronicslab.org-tested.qcow2: git.openelectronicslab.org.gitlab.qcow2
 	rm -fv /backups/git.openelectronicslab.org/latest
 	ln -s /backups/git.openelectronicslab.org/$(NOW) \
 		/backups/git.openelectronicslab.org/latest
+	cp -v ./id_rsa_tmp /backups/git.openelectronicslab.org/latest/
+	cp -v ./id_rsa_tmp.pub /backups/git.openelectronicslab.org/latest/
 	scp -i ./id_rsa_tmp -r \
 		root@git.openelectronicslab.org:/root/.ssh/authorized_keys \
 		root@git.openelectronicslab.org:/etc/ssh/ssh_host_rsa_key \
