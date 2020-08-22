@@ -208,12 +208,23 @@ install: $(IMAGE_DIR) git.openelectronicslab.org.gitlab.qcow2 \
 	cp -v stop-qemu-git-openelectronicslab.sh $(IMAGE_DIR)/
 	cp -v start-qemu-git-openelectronicslab.sh $(IMAGE_DIR)/
 	cp -v qemu-git-openelectronicslab.service $(IMAGE_DIR)/
-	-ln -s $(IMAGE_DIR)/qemu-git-openelectronicslab.service \
+	-ln -sv $(IMAGE_DIR)/qemu-git-openelectronicslab.service \
 		/etc/systemd/system/qemu-git-openelectronicslab.service
 	cp -v git.openelectronicslab.org.gitlab.qcow2 \
 		$(IMAGE_DIR)/git.openelectronicslab.org.gitlab.qcow2
 	systemctl daemon-reload
 	systemctl start qemu-git-openelectronicslab
+	./retry.sh $(RETRIES) $(DELAY) \
+		ssh root@git.openelectronicslab.org \
+			-i ./id_rsa_tmp \
+			'/bin/true'
+	scp -i ./id_rsa_tmp \
+		./letsencrypt.sh \
+		root@git.openelectronicslab.org:/root/
+	ssh root@git.openelectronicslab.org \
+		-i ./id_rsa_tmp \
+		'bash /root/letsencrypt.sh'
+
 
 NOW=`cat now_timestamp`
 
@@ -238,6 +249,7 @@ git.openelectronicslab.org-tested.qcow2: git.openelectronicslab.org.gitlab.qcow2
 		root@git.openelectronicslab.org:/etc/ssh/ssh_host_rsa_key.pub \
 		root@git.openelectronicslab.org:/etc/gitlab/gitlab-secrets.json \
 		root@git.openelectronicslab.org:/etc/gitlab/gitlab.rb \
+		root@git.openelectronicslab.org:/etc/gitlab/ssl \
 		root@git.openelectronicslab.org:/var/opt/gitlab/backups \
 		$(BACKUPS_DIR)/latest
 	cp -v $< git.openelectronicslab.org.gitlab-pre-restore.qcow2
@@ -313,6 +325,16 @@ redeploy: git.openelectronicslab.org-tested.qcow2
 	mv -v $(QCOW_FILE) $(QCOW_FILE).`date --utc +"%Y%m%dT%H%M%SZ"`
 	cp -v git.openelectronicslab.org-tested.qcow2 $(QCOW_FILE)
 	systemctl start qemu-git-openelectronicslab.service
+	./retry.sh $(RETRIES) $(DELAY) \
+		ssh root@git.openelectronicslab.org \
+			-i ./id_rsa_tmp \
+			'/bin/true'
+	scp -i ./id_rsa_tmp \
+		./letsencrypt.sh \
+		root@git.openelectronicslab.org:/root/
+	ssh root@git.openelectronicslab.org \
+		-i ./id_rsa_tmp \
+		'bash /root/letsencrypt.sh'
 
 # TODO: restore from disaster, no running instance
 # restore: git.openelectronicslab.org-tested.qcow2

@@ -1,5 +1,3 @@
-* test restore on magellan
-* ssl cert - let's encrypt
 * fix http redirect to https
 * back-up-and-restore instance configuration and data
 	* create a test project by hand
@@ -18,3 +16,6 @@
 	* /etc/vnc.conf set geometry to $geometry = "1680x1050";
 	* add ssvnc scaling instructions to motd
 		* F8 from ssvnc, scaling = 2
+* build dev vm/container environment; test restore on dev environment
+
+* ssl cert - let's encrypt cert renewal check (may brake ~november 21)
