@@ -1,4 +1,3 @@
-* fix http redirect to https
 * back-up-and-restore instance configuration and data
 	* create a test project by hand
 	* backup should should complete then create and restore to a local
