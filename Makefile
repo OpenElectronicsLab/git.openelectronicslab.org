@@ -7,7 +7,7 @@ QCOW_FILE=$(IMAGE_DIR)/git.openelectronicslab.org.gitlab.qcow2
 
 BACKUPS_DIR=/backups/git.openelectronicslab.org
 
-INITIAL_DISK_SIZE=8G
+INITIAL_DISK_SIZE=20G
 KVM_CORES=2
 KVM_DEBIAN_INSTALL_RAM=1G
 KVM_RAM=8G
