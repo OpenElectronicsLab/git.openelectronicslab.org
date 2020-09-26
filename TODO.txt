@@ -1,3 +1,8 @@
+* CI Pipeline
+We have tested a simple pipline using gitlab.com
+Next we could build a VM for running CI from git.openelectronicslab.org,
+and figure out how to connect them.
+
 * back-up-and-restore instance configuration and data
 	* create a test project by hand
 	* backup should should complete then create and restore to a local
