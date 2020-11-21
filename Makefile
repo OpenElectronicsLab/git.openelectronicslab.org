@@ -91,7 +91,7 @@ git.openelectronicslab.org.base.qcow2: $(ISO_TARGET)
 	qemu-system-x86_64 -hda tmp.qcow2 -cdrom $(ISO_TARGET) \
 		-m $(KVM_DEBIAN_INSTALL_RAM) -smp $(KVM_CORES) \
 		-machine type=pc,accel=kvm \
-		-display curses \
+		-display none \
 		-nic user,hostfwd=tcp:127.0.0.1:10022-:22
 	mv tmp.qcow2 $@
 
