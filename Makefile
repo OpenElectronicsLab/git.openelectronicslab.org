@@ -228,7 +228,7 @@ install: $(IMAGE_DIR) git.openelectronicslab.org.gitlab.qcow2 \
 
 NOW=`cat now_timestamp`
 
-git.openelectronicslab.org-tested.qcow2: git.openelectronicslab.org.gitlab.qcow2
+git.openelectronicslab.org-tested: git.openelectronicslab.org.gitlab.qcow2
 	{ lsof -i:10022; if [ $$? -eq 0 ]; then echo "port 10022 not free"; false; fi; }
 	{ lsof -i:10443; if [ $$? -eq 0 ]; then echo "port 10443 not free"; false; fi; }
 	# TODO: add backup user, id_rsa_tmp will be wrong
@@ -310,11 +310,13 @@ git.openelectronicslab.org-tested.qcow2: git.openelectronicslab.org.gitlab.qcow2
 	mv -v git.openelectronicslab.org.gitlab-post-restore.qcow2 \
 		git.openelectronicslab.org.gitlab-post-restore.$(NOW).qcow2
 	rm -fv $@
-	ln -sv git.openelectronicslab.org.gitlab-post-restore.$(NOW).qcow2 $@
+	rm git.openelectronicslab.org.gitlab-post-restore.$(NOW).qcow2
+	touch $@
 
 # TODO: backup should run every time "make backup" is called
 #	rather than depend on the presence of the "foo.tested.qcow2"
-backup: git.openelectronicslab.org-tested.qcow2
+backup: git.openelectronicslab.org-tested
+	rm -v git.openelectronicslab.org-tested
 
 # TODO separate the making of a backup from testing of a backup
 redeploy: git.openelectronicslab.org-tested.qcow2
