@@ -213,6 +213,7 @@ install: $(IMAGE_DIR) git.openelectronicslab.org.gitlab.qcow2 \
 	cp -v git.openelectronicslab.org.gitlab.qcow2 \
 		$(IMAGE_DIR)/git.openelectronicslab.org.gitlab.qcow2
 	systemctl daemon-reload
+	systemctl enable qemu-git-openelectronicslab
 	systemctl start qemu-git-openelectronicslab
 	./retry.sh $(RETRIES) $(DELAY) \
 		ssh root@git.openelectronicslab.org \

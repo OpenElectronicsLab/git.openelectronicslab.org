@@ -1,15 +1,11 @@
 [Unit]
 Description=QEMU virtual machine for git.openelectronicslab.org
+After=network.target
 
 [Service]
-#Environment="haltcmd=kill -INT $MAINPID"
-#EnvironmentFile=/etc/conf.d/qemu.d/%i
-#ExecStart=/usr/bin/qemu-system-x86_64 -name %i -enable-kvm -m 512 -nographic $args
-#ExecStop=/usr/bin/bash -c ${haltcmd}
-#ExecStop=/usr/bin/bash -c 'while nc localhost 7100; do sleep 1; done'
-
 ExecStart=/var/images/start-qemu-git-openelectronicslab.sh
 ExecStop=/var/images/stop-qemu-git-openelectronicslab.sh
+Restart=always
 
 [Install]
 WantedBy=multi-user.target
